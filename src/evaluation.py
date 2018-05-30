@@ -96,13 +96,30 @@ def prediction_for_userids(algo, trainset, testdic, userids):
                     user_est_true[u].append((algo.estimate(u_numid,i)-algo.trainset.offset,1))
                 else:
                     user_est_true[u].append((algo.estimate(u_numid,i)-algo.trainset.offset,0))
+        print(u)
+    return user_est_true
+
+def prediction_for_userids_svd(algo, trainset, testdic, userids):
+    user_est_true = defaultdict(list)
+    for u in userids:
+        u_numid = trainset.to_inner_uid(u)
+        user_items = set([j for (j, _) in trainset.ur[u_numid]])
+        user_est_true[u] = []
+        for i in trainset.all_items():
+            if i not in user_items :
+                if trainset.to_raw_iid(i) in testdic[u]:
+                    user_est_true[u].append((algo.estimate(u_numid,i)-algo.trainset.offset,1))
+                else:
+                    user_est_true[u].append((algo.estimate(u_numid,i)-algo.trainset.offset,0))
+        # print(u)
     return user_est_true
 
 def precision_recall_at_k(user_est_true, testdict, k=10, threshold=0):
     '''Return precision and recall at k metrics'''
     precisions = dict()
     recalls = dict()
-    
+    # numzero_n_rec_k = 0
+
     for uid, user_ratings in user_est_true.items():
         
         user_ratings_greater_threshold = [(est, true) for (est,true) in user_ratings if est > threshold]
@@ -116,6 +133,9 @@ def precision_recall_at_k(user_est_true, testdict, k=10, threshold=0):
             n_rec_k = k
         else:
             n_rec_k = n_greater_threshold
+            # if n_greater_threshold == 0:
+            #     numzero_n_rec_k += 1
+            #     pass
             
         # Number of relevant and recommended items in top k
         if n_greater_threshold > k:
@@ -133,4 +153,5 @@ def precision_recall_at_k(user_est_true, testdict, k=10, threshold=0):
         # Recall@K: Proportion of relevant items that are recommended
         recalls[uid] = n_rel_and_rec_k / n_rel if n_rel != 0 else 1
     
+    # return precisions, recalls, numzero_n_rec_k
     return precisions, recalls
